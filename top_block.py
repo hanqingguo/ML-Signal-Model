@@ -3,7 +3,7 @@
 ##################################################
 # GNU Radio Python Flow Graph
 # Title: Top Block
-# Generated: Tue Jan  9 17:41:51 2018
+# Generated: Wed Jan 10 17:54:29 2018
 ##################################################
 
 if __name__ == '__main__':
@@ -393,6 +393,10 @@ class top_block(gr.top_block, Qt.QWidget):
         )
         self.blocks_vector_source_x_0 = blocks.vector_source_b((1,0,0,0,0,1), True, 1, [])
         self.blocks_unpacked_to_packed_xx_0 = blocks.unpacked_to_packed_bb(1, gr.GR_MSB_FIRST)
+        self.blocks_file_sink_0_0_0 = blocks.file_sink(gr.sizeof_gr_complex*1, '/home/hanqing/Wireless Research/Y_test', False)
+        self.blocks_file_sink_0_0_0.set_unbuffered(False)
+        self.blocks_file_sink_0_0 = blocks.file_sink(gr.sizeof_gr_complex*1, '/home/hanqing/Wireless Research/X_test', False)
+        self.blocks_file_sink_0_0.set_unbuffered(False)
         self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_char*1, '/home/hanqing/Wireless Research/dbpsk_out', False)
         self.blocks_file_sink_0.set_unbuffered(False)
 
@@ -404,9 +408,11 @@ class top_block(gr.top_block, Qt.QWidget):
         self.connect((self.blocks_vector_source_x_0, 0), (self.qtgui_number_sink_0_0, 0))
         self.connect((self.digital_dxpsk_demod_0, 0), (self.blocks_file_sink_0, 0))
         self.connect((self.digital_dxpsk_demod_0, 0), (self.qtgui_number_sink_0, 0))
+        self.connect((self.digital_dxpsk_mod_0, 0), (self.blocks_file_sink_0_0, 0))
         self.connect((self.digital_dxpsk_mod_0, 0), (self.qtgui_freq_sink_x_0, 0))
         self.connect((self.digital_dxpsk_mod_0, 0), (self.qtgui_time_sink_x_0, 0))
         self.connect((self.digital_dxpsk_mod_0, 0), (self.uhd_usrp_sink_0, 0))
+        self.connect((self.uhd_usrp_source_0, 0), (self.blocks_file_sink_0_0_0, 0))
         self.connect((self.uhd_usrp_source_0, 0), (self.digital_dxpsk_demod_0, 0))
         self.connect((self.uhd_usrp_source_0, 0), (self.qtgui_freq_sink_x_0_0, 0))
         self.connect((self.uhd_usrp_source_0, 0), (self.qtgui_time_sink_x_0_0, 0))
