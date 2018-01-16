@@ -7,12 +7,57 @@ import numpy as np
 
 
 
-def loadData():
+def loadData(input_data_path, output_data_path):
+    """
+    load Training Data, include real and imag part
+    :return: dict contains all data
+    """
+    train_input = scipy.fromfile(open(input_data_path), dtype = scipy.complex64)
+    train_output = scipy.fromfile(open(output_data_path), dtype = scipy.complex64)
+
+    data = {
+        "X" : train_input,
+        "Y" : train_output
+    }
+    return data
+
+def complex_divide(X_train, Y_train, X_test, Y_test):
     """
 
-    :return:
+    splite complex number to real and imag part
+    for example:
+    Before : X_train = np.array([1+2j, 2+3j, 3+4j])
+    After  : X_train = np.array([[ 1.,  2.],
+                            [ 2.,  3.],
+                            [ 3.,  4.]])
+    :param X_train: X_train data  shape(1,m) 1 is complex number
+    :param Y_train: Y_train data
+    :param X_test:  X_test data
+    :param Y_test:  Y_test data
+    :return: shape(2,m) 2 is real and imag part
     """
-    pass
+
+    def combine(real_part, imag_part):
+        real_part = real_part.reshape(real_part.shape[0],1)
+        imag_part = imag_part.reshape(imag_part.shape[0],1)
+        combined = np.concatenate((real_part,imag_part),axis=1)
+        return combined
+
+    real_x_train, imag_x_train = X_train.real, X_train.imag
+    real_y_train, imag_y_train = Y_train.real, Y_train.imag
+    real_x_test, imag_x_test = X_test.real, X_test.imag
+    real_y_test, imag_y_test = Y_test.real, Y_test.imag
+
+    X_train = combine(real_x_train,imag_x_train).T
+    Y_train = combine(real_y_train, imag_y_train).T
+    X_test = combine(real_x_test, imag_x_test).T
+    Y_test = combine(real_y_test, imag_y_test).T
+
+
+    return X_train, Y_train, X_test, Y_test
+
+
+
 
 def create_placeholders(n_x, n_y):
     """
@@ -69,6 +114,7 @@ def forward_propogation(X,parameters):
     A2 = tf.nn.tanh(Z2)
     Z3 = tf.matmul(W3,A2) + b3
 
+
     return Z3
 
 def compute_cost(Z3, Y):
@@ -78,11 +124,11 @@ def compute_cost(Z3, Y):
     :param Y: true value of output complex number
     :return: cost: Tensor of the cost function
     """
-    cost = tf.reduce_mean(Z3 + Y)
+    cost = tf.reduce_mean((Z3 + Y)**2)
     return cost
 
 def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
-          num_epochs = 1500, minibatch_size = 32, print_cost = True):
+          num_epochs = 10, minibatch_size = 10000, print_cost = True):
     """
 
     :param X_train: training set, input size = 2, real and imag parts, number of training examples = unknown
@@ -108,7 +154,7 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
     parameters = initial_Parameter()
     Z3 = forward_propogation(X, parameters)
     cost = compute_cost(Z3, Y)
-    optimizer = tf.train.AdamOptimizer(complex64learning_rate=learning_rate).minimize(cost)
+    optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
     init = tf.global_variables_initializer()
     with tf.Session() as sess:
@@ -122,12 +168,14 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
 
                 (minibatch_X, minibatch_Y) = minibatch
 
+
                 _, minibatch_cost = sess.run([optimizer,cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
 
                 epoch_cost += minibatch_cost / num_minibatches
 
-            if print_cost == True and epoch % 100 == 0:
-                print "Cost after epoch %i: %f"% (epoch, epoch_cost)
+            if print_cost == True and epoch % 10 == 0:
+
+                print ("Cost after epoch %i: %f"% (epoch, epoch_cost))
             if print_cost == True and epoch% 5 == 0:
                 costs.append(epoch_cost)
 
@@ -141,22 +189,48 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.0001,
         parameters = sess.run(parameters)
         print ("Parameters have been trained")
 
-        correct_prediction = tf.equal(tf.argmax(Z3), tf.argmax(Y))
+        # correct_prediction = tf.equal(tf.argmax(Z3), tf.argmax(Y))
+        #
+        # accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+        accuracy = Y+Z3
 
         print ("Train Accuracy: ", accuracy.eval({X:X_train, Y:Y_train}))
         print ("Test Accuracy: ", accuracy.eval({X:X_test, Y:Y_test}))
 
         return parameters
 
-tf.reset_default_graph()
-with tf.Session() as sess:
-    X, Y =  create_placeholders(n_x=2, n_y=2)
-    parameters = initial_Parameter()
-    Z3 = forward_propogation(X,parameters)
-    cost = compute_cost(Z3,Y)
-    print "cost = " +str(cost)
+data = loadData("X_train","Y_train")
+
+Y_train = data["Y"]
+length = len(Y_train)
+X_train = data["X"][0:length]
+
+
+
+test_data = loadData("X_test","Y_test")
+Y_test = data["Y"]
+length = len(Y_test)
+X_test = data["X"][0:length]
+
+
+X_train, Y_train, X_test, Y_test = complex_divide(X_train, Y_train, X_test, Y_test)
+
+
+
+
+parameters = model(X_train, Y_train, X_test, Y_test)
+
+
+
+
+# tf.reset_default_graph()
+# with tf.Session() as sess:
+#     X, Y =  create_placeholders(n_x=2, n_y=2)
+#     parameters = initial_Parameter()
+#     Z3 = forward_propogation(X,parameters)
+#     cost = compute_cost(Z3,Y)
+#     print ("cost = " +str(cost))
 
 # f1 = scipy.fromfile(open("dbpsk_out"),dtype = scipy.byte)
 # for i in range(len(f1)):
